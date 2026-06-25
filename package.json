@@ -1,0 +1,35 @@
+{
+  "name": "dave-testdaten-generator",
+  "version": "1.0.0",
+  "description": "Webanwendung zum Erzeugen von DAVe-Zähldaten-Testdateien (CSV) auf Basis der it@M RefArch-Frontend-Vorlage.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit --skipLibCheck && vite build",
+    "preview": "vite preview",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "lint": "prettier . --check && vue-tsc --noEmit --skipLibCheck",
+    "fix": "prettier . --write"
+  },
+  "dependencies": {
+    "@mdi/font": "7.4.47",
+    "pinia": "3.0.2",
+    "sass": "1.87.0",
+    "vue": "3.5.13",
+    "vue-router": "4.5.1",
+    "vuetify": "3.8.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.2.3",
+    "@vue/test-utils": "2.4.6",
+    "jsdom": "25.0.1",
+    "prettier": "3.5.3",
+    "typescript": "5.8.3",
+    "vite": "6.3.4",
+    "vite-plugin-vuetify": "2.1.1",
+    "vitest": "3.1.2",
+    "vue-tsc": "2.2.10"
+  }
+}

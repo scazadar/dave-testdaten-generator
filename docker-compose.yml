@@ -1,0 +1,10 @@
+services:
+  testdaten-generator:
+    build:
+      context: .
+    image: dave-testdaten-generator:latest
+    container_name: dave-testdaten-generator
+    ports:
+      # Host 8090 -> Container 8080 (nginx); 8082 ist vom DAVe-Frontend belegt
+      - "8090:8080"
+    restart: unless-stopped

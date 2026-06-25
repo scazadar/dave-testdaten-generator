@@ -1,0 +1,146 @@
+# Kombiniertes Setup: DAVe-Stack (Infrastruktur + Backend + Frontend)
+# zusammen mit dem Testdaten-Generator.
+#
+# Es wird der offizielle Stack aus dave-backend/stack eingebunden (via include)
+# und um den lokal gebauten Testdaten-Generator erweitert.
+#
+# Aufruf aus diesem Verzeichnis (dave-testdaten-generator/):
+#   # nur Infrastruktur (Elasticsearch, Kibana, Postgres, pgAdmin) + Generator:
+#   docker compose -f compose.dave-stack.yml up -d
+#
+#   # zusätzlich Backend + Frontend mit Beispieldaten (siehe Hinweis unten):
+#   docker compose -f compose.dave-stack.yml --profile sample-stack up -d
+#
+# Ports:
+#   - Testdaten-Generator : http://localhost:8090
+#   - DAVe-Frontend (UI)  : http://localhost:8082   (Profil sample-stack)
+#   - Selfservice-Portal  : http://localhost:8084   (Profil sample-stack)
+#   - Admin-Portal        : http://localhost:8083   (Profil sample-stack)
+#   - DAVe-Backend        : http://localhost:50001  (Profil sample-stack)
+#   - Kibana              : http://localhost:5601
+#   - pgAdmin             : http://localhost:5050
+#   - Postgres            : localhost:5432
+#   - Elasticsearch       : https://localhost:9200
+#
+# WICHTIG (Eigenheit des offiziellen DAVe-Stacks):
+# Das Backend benötigt den Fingerprint des Elasticsearch-Zertifikats. Dieser wird
+# erst nach dem ersten Start der Infrastruktur erzeugt. Ablauf für den vollen Stack:
+#   1) docker compose -f compose.dave-stack.yml up -d          (Infra + Generator)
+#   2) Fingerprint erzeugen:
+#      docker exec elastic openssl x509 -noout -fingerprint -sha256 \
+#        -in config/certs/elastic/elastic.crt
+#   3) Den Wert (ohne "sha256 Fingerprint=" und ohne Doppelpunkte) in
+#      ../dave-backend/stack/.env als ELASTICSEARCH_CERT_FINGERPRINT eintragen.
+#   4) docker compose -f compose.dave-stack.yml --profile sample-stack up -d
+#
+# Der Testdaten-Generator selbst ist eigenständig und braucht weder Backend
+# noch Elasticsearch – er kann also auch ohne die obigen Schritte genutzt werden.
+
+include:
+  - path: ../dave-backend/stack/docker-compose.yml
+    env_file: ../dave-backend/stack/.env
+
+services:
+  testdaten-generator:
+    build:
+      context: .
+    image: dave-testdaten-generator:latest
+    container_name: dave-testdaten-generator
+    ports:
+      - "8090:8080"
+    restart: unless-stopped
+
+  # Ergänzt die aus dem DAVe-Stack eingebundene dave-backend-Definition (Merge
+  # über den gleichen Service-Namen) um Konfiguration, die das :latest-Image
+  # erwartet, der Sample-Stack aber nicht mitliefert:
+  #   dave.tenant.map.baseLayers – mindestens ein Karten-Basis-Layer ist Pflicht
+  #   (MapConfigProperties, @NotEmpty). Hier ein OpenStreetMap-Layer.
+  dave-backend:
+    profiles: [sample-stack]
+    environment:
+      - DAVE_TENANT_MAP_BASELAYERS_0_BASEURL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+      - DAVE_TENANT_MAP_BASELAYERS_0_LAYERNAME=osm
+      - DAVE_TENANT_MAP_BASELAYERS_0_LAYERNAMETODISPLAY=OpenStreetMap
+      - DAVE_TENANT_MAP_BASELAYERS_0_ATTRIBUTION=© OpenStreetMap contributors
+
+  # Einmaliger Seed der Sample-Daten beim Anlegen der Datenbank.
+  # Hintergrund: spring.sql.init führt die image-interne sample-data.sql im
+  # :latest-Image NICHT zuverlässig aus -> auf frischer Postgres-DB fehlen
+  # Zeitintervalle, PKW-Einheiten und Hochrechnungsfaktoren (u.a. liefert
+  # /pkw-einheit/latest dann 404). Deterministischer Weg: nach erfolgter
+  # Flyway-Migration (dave-backend healthy) wird seed/sample-data.sql per psql
+  # eingespielt (search_path=dave_ng). Nur wenn die DB leer ist (feste IDs ohne
+  # ON CONFLICT) -> idempotent über Neustarts. Nutzt das vorhandene Postgres-Image.
+  sample-seed:
+    profiles: [sample-stack]
+    image: postgres:16.6-alpine3.21
+    container_name: dave-sample-seed
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dave-backend:
+        condition: service_healthy
+    environment:
+      - PGPASSWORD=1234 # entspricht POSTGRES_PASSWORD des Stacks
+    volumes:
+      - ./seed/seed.sh:/seed/seed.sh:ro
+      - ./seed/sample-data.sql:/seed/sample-data.sql:ro
+    entrypoint: ["sh", "/seed/seed.sh"]
+
+  # Selfservice-Portal (Zähldienstleister laden Zähldaten hoch).
+  # Eigenständige Spring-Cloud-Gateway-App (Port 8084); das Vue-Frontend ist als
+  # /static im Jar gebündelt. Das Gateway leitet /api/dave-backend-service/** an
+  # das dave-backend weiter. Profil "no-security" deaktiviert die SSO-/OAuth-Kette
+  # (SecurityConfiguration ist @Profile("!no-security")).
+  dave-selfservice-portal:
+    profiles: [sample-stack]
+    container_name: dave-selfservice-portal
+    image: ghcr.io/it-at-m/dave-selfservice-portal/dave-selfserviceportal:latest
+    pull_policy: always
+    restart: on-failure
+    depends_on:
+      dave-backend:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,no-security
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=backend
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://dave-backend:50001
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/api/dave-backend-service/**
+      # $$ -> $ (Compose-Escape); \{ verhindert, dass Spring den Placeholder auflöst
+      # (Spring Cloud Gateway ersetzt $\ wieder durch $ in der RewritePath-Vorlage).
+      - "SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0=RewritePath=/api/dave-backend-service/(?<segment>.*), /$$\\{segment}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8084/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # Admin-Portal (LHM prüft/gibt hochgeladene Zähldaten frei). Gleiche Architektur
+  # wie das Selfservice-Portal, Gateway-Port 8083.
+  dave-admin-portal:
+    profiles: [sample-stack]
+    container_name: dave-admin-portal
+    image: ghcr.io/it-at-m/dave-admin-portal/dave-adminportal:latest
+    pull_policy: always
+    restart: on-failure
+    depends_on:
+      dave-backend:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,no-security
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=backend
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://dave-backend:50001
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/api/dave-backend-service/**
+      - "SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0=RewritePath=/api/dave-backend-service/(?<segment>.*), /$$\\{segment}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
