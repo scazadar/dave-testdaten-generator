@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DAVe Testdaten-Generator — 3-Minuten-Pitch</title>
+<style>
+  :root{
+    --bg:#0e1b2c; --bg2:#16273f; --accent:#36a3ff; --accent2:#23d18b;
+    --ink:#eaf2fb; --muted:#9fb3c8; --card:#14273f; --line:#27425f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 800px at 70% -10%,#1c3553 0%,#0e1b2c 55%);
+    color:var(--ink);overflow:hidden;
+  }
+  .deck{position:relative;height:100vh;width:100vw}
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;
+    padding:6vh 9vw;animation:fade .35s ease;
+  }
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .kicker{color:var(--accent);font-weight:700;letter-spacing:.18em;text-transform:uppercase;font-size:.85rem;margin-bottom:1.2rem}
+  h1{font-size:clamp(2.2rem,5.2vw,4.2rem);line-height:1.05;font-weight:800;letter-spacing:-.02em}
+  h2{font-size:clamp(1.8rem,3.6vw,3rem);font-weight:800;letter-spacing:-.01em;margin-bottom:1.6rem}
+  .lede{font-size:clamp(1.05rem,1.7vw,1.4rem);color:var(--muted);max-width:60ch;margin-top:1.4rem;line-height:1.5}
+  ul{list-style:none;display:flex;flex-direction:column;gap:1rem;margin-top:.4rem}
+  li{font-size:clamp(1rem,1.6vw,1.4rem);line-height:1.4;padding-left:2.2rem;position:relative}
+  li::before{content:"";position:absolute;left:0;top:.55em;width:.85rem;height:.85rem;border-radius:3px;background:var(--accent);transform:rotate(45deg)}
+  li b{color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:.6rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.4rem 1.5rem}
+  .card h3{font-size:1.1rem;color:var(--accent);margin-bottom:.5rem}
+  .card p{color:var(--muted);font-size:.98rem;line-height:1.45}
+  .big{font-size:clamp(2.4rem,4vw,3.4rem);font-weight:800;color:var(--accent2);line-height:1}
+  .flow{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-top:1.4rem;font-size:clamp(.95rem,1.5vw,1.3rem)}
+  .pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.55rem 1.1rem;white-space:nowrap}
+  .pill.on{border-color:var(--accent);color:#fff;box-shadow:0 0 0 2px rgba(54,163,255,.25)}
+  .arrow{color:var(--accent);font-weight:800}
+  .tags{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.8rem}
+  .tag{background:rgba(54,163,255,.12);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:.4rem .8rem;font-size:.9rem}
+  code{background:#0a1422;border:1px solid var(--line);padding:.15em .45em;border-radius:6px;color:#cfe6ff;font-size:.9em}
+  .footer{position:fixed;bottom:1.4rem;left:0;right:0;display:flex;justify-content:space-between;
+    padding:0 9vw;color:var(--muted);font-size:.8rem;align-items:center}
+  .bar{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  .note{margin-top:1.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+  .two{display:grid;grid-template-columns:1.1fr .9fr;gap:3rem;align-items:center}
+  @media (max-width:760px){.grid,.two{grid-template-columns:1fr}}
+  .urls{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:1.6rem}
+  .urls span{font-size:1.05rem}.urls b{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · Titel -->
+  <section class="slide active">
+    <div class="kicker">Stadt München · Verkehrszähldaten</div>
+    <h1>DAVe<br>Testdaten-Generator</h1>
+    <p class="lede">Realistische Zähldaten für das DAVe-Datenportal — in Sekunden statt Stunden.</p>
+    <div class="note">3-Minuten-Pitch · ← / → zum Blättern</div>
+  </section>
+
+  <!-- 2 · Problem -->
+  <section class="slide">
+    <div class="kicker">Das Problem</div>
+    <h2>Testen ohne Testdaten ist mühsam</h2>
+    <div class="two">
+      <ul>
+        <li><b>DAVe</b> ist das Verkehrszähldaten-Portal der Stadt München.</li>
+        <li>Wer entwickelt, testet oder vorführt, braucht <b>realistische Zähldaten</b>.</li>
+        <li>Diese von Hand zu erstellen ist <b>mühsam, langsam und fehleranfällig</b> — striktes CSV-Format, 96 Viertelstunden-Intervalle, 16 verschiedene Zählarten mit je eigener Feldlogik.</li>
+      </ul>
+      <div class="card">
+        <h3>Bisher</h3>
+        <p>CSV-Zeilen von Hand tippen, Format-Fehler suchen, Datei hochladen, hoffen, dass der Import durchläuft.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · Herangehensweise -->
+  <section class="slide">
+    <div class="kicker">Die Herangehensweise</div>
+    <h2>Eine schlanke Web-App, die das Format kennt</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>1 · Konfigurieren</h3>
+        <p>Zählstelle, Zählart (alle 16), Datum, Knotenarm wählen. Felder <code>nach</code>/<code>Strassenseite</code>/<code>Richtung</code> blenden sich je Zählart automatisch ein.</p>
+      </div>
+      <div class="card">
+        <h3>2 · Werte erzeugen</h3>
+        <p>Pro Fahrzeugkategorie: <b>fester Wert</b>, <b>Zufall</b>, realistische <b>Tageskurve</b> (Morgen-/Abendspitze) oder <b>aus</b>.</p>
+      </div>
+      <div class="card">
+        <h3>3 · Direkt an DAVe</h3>
+        <p>CSV-Download <b>oder</b> per Klick direkt ins Backend senden — kein manueller Datei-Import nötig.</p>
+      </div>
+    </div>
+    <div class="tags">
+      <span class="tag">Vue 3</span><span class="tag">Vuetify 3</span><span class="tag">Pinia</span>
+      <span class="tag">TypeScript</span><span class="tag">Vite</span><span class="tag">it@M RefArch-Vorlage</span>
+    </div>
+  </section>
+
+  <!-- 4 · Kern-Feature -->
+  <section class="slide">
+    <div class="kicker">Das Kern-Feature</div>
+    <h2>Von der Eingabe bis ins Portal — ein Klick</h2>
+    <div class="flow">
+      <span class="pill on">Generator</span><span class="arrow">→</span>
+      <span class="pill">POST /zaehlstelle/save</span><span class="arrow">→</span>
+      <span class="pill">POST /zaehlung/save…</span><span class="arrow">→</span>
+      <span class="pill on">Elasticsearch + Postgres</span>
+    </div>
+    <ul style="margin-top:2rem">
+      <li><b>„An DAVe senden"</b> legt Zählstelle &amp; Zählung direkt im Backend an.</li>
+      <li><b>Workflow-Stepper:</b> Status der Zählung weiterschalten und live beobachten, in welchem Portal sie erscheint (Admin / Selfservice).</li>
+    </ul>
+  </section>
+
+  <!-- 5 · Ergebnis -->
+  <section class="slide">
+    <div class="kicker">Das Ergebnis</div>
+    <h2>Testdaten in Sekunden — reproduzierbar</h2>
+    <div class="grid">
+      <div class="card"><div class="big">16</div><p>unterstützte DAVe-Zählarten, jede mit korrekter Feldlogik</p></div>
+      <div class="card"><div class="big">1 Klick</div><p>von der Konfiguration bis zur sichtbaren Zählung in beiden Portalen</p></div>
+      <div class="card"><div class="big">1 Skript</div><p><code>reset-dave-stack.sh</code> baut den kompletten Stack reproduzierbar auf</p></div>
+    </div>
+    <ul style="margin-top:1.6rem">
+      <li>Voller Docker-Stack: Generator, DAVe-Backend, Admin- &amp; Selfservice-Portal plus Infrastruktur.</li>
+      <li>Format-Fehler ausgeschlossen — das exakte Upload-Format ist im Tool kodiert und getestet (15 Unit-Tests grün).</li>
+    </ul>
+  </section>
+
+  <!-- 6 · Outro -->
+  <section class="slide">
+    <div class="kicker">Fazit</div>
+    <h1>Testdaten in Sekunden<br>statt Stunden.</h1>
+    <div class="urls">
+      <span>Generator <b>:8090</b></span>
+      <span>Admin-Portal <b>:8083</b></span>
+      <span>Selfservice <b>:8084</b></span>
+    </div>
+    <p class="lede">DAVe Testdaten-Generator — entwickeln, testen und vorführen ohne Reibungsverlust.</p>
+  </section>
+
+</div>
+
+<div class="footer">
+  <span>DAVe Testdaten-Generator</span>
+  <span id="counter">1 / 6</span>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0;
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('counter').textContent=(i+1)+' / '+slides.length;
+    document.getElementById('bar').style.width=((i+1)/slides.length*100)+'%';
+  }
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){show(i+1);e.preventDefault();}
+    if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){show(i-1);e.preventDefault();}
+    if(e.key==='Home')show(0); if(e.key==='End')show(slides.length-1);
+  });
+  document.addEventListener('click',e=>{ if(e.clientX > window.innerWidth*0.5) show(i+1); else show(i-1); });
+  show(0);
+</script>
+</body>
+</html>
